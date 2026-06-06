@@ -1,5 +1,5 @@
 services:
-  app:
+  wm-pickems:
     build: .
     container_name: fhun_tips
     image: wm-pickems:latest
@@ -14,13 +14,11 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
     volumes:
-      - pb_data:/pb_data
-    networks: [wmpickems]
-
-volumes:
-  pb_data:
+      - /srv/mergerfs/Heimspeicher/Heimspeicher/Appdata/WMPickems:/pb_data
+    networks:
+      - nginx
 
 networks:
-    wmpickems:
-        name: wmpickems
-        driver: bridge
+  nginx:
+    external: true
+    name: nginx
