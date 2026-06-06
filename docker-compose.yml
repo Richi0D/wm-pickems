@@ -14,9 +14,10 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
     volumes:
-      - /srv/mergerfs/Heimspeicher/Heimspeicher/Appdata/WMPickems:/pb_data
+        - /opt/wm-pickems/pb_data:/pb_data
     networks:
       - nginx
+    user: "10002:10002"
 
 networks:
   nginx:
