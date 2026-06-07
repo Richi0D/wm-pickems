@@ -78,6 +78,7 @@
 		</div>
 		{#if error}<p class="error">{error}</p>{/if}
 		<button class="btn" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
+		<!--
 		<div class="sep"><span>or</span></div>
 		<button
 			type="button"
@@ -106,6 +107,7 @@
 			</svg>
 			<span class="gsi-text">Continue with Google</span>
 		</button>
+		-->
 		<p class="muted switch">
 			No account? <a href={registerHref}>Create one</a>
 		</p>
