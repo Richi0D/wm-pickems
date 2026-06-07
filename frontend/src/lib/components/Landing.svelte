@@ -229,6 +229,7 @@
 	</header>
 
 	<!-- ============ BROADCAST MARQUEE ============ -->
+	<!--
 	<div class="marquee" aria-hidden="true">
 		<div class="track">
 			{#each [0, 1] as copy (copy)}
@@ -240,8 +241,10 @@
 			{/each}
 		</div>
 	</div>
+	-->
 
 	<!-- ============ WHY ============ -->
+	<!--
 	<section class="block">
 		<p class="kicker">Why this app</p>
 		<h2>No money. No ads. No nonsense.</h2>
@@ -258,6 +261,7 @@
 			{/each}
 		</div>
 	</section>
+	-->
 
 	<!-- ============ TWO MODES ============ -->
 	<section class="block">
@@ -477,6 +481,7 @@
 	</section>
 
 	<!-- ============ AI STANDOFF ============ -->
+	<!--
 	<section class="block">
 		<p class="kicker">Man vs machine</p>
 		<h2>You vs the <span class="grad">world's best AI.</span></h2>
@@ -503,6 +508,7 @@
 			</div>
 		</div>
 	</section>
+	-->
 
 	<!-- ============ FINAL CTA ============ -->
 	<section class="block final">
@@ -518,7 +524,7 @@
 			</div>
 		</div>
 		<p class="foot muted">
-			WM Tips · open source · made for the love of the game · by <a href="https://floholz.com" target="_blank" rel="noopener">floholz</a>
+			WM Tips · open source · made for the love of the game
 		</p>
 	</section>
 </div>
