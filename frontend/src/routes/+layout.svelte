@@ -8,7 +8,11 @@
 	import NavLinks from '$lib/components/NavLinks.svelte';
 	import PwaInstallButton from '$lib/components/PwaInstallButton.svelte';
 	import PwaInstallBanner from '$lib/components/PwaInstallBanner.svelte';
+	import NotifyAnnounce from '$lib/components/NotifyAnnounce.svelte';
+	import VerifyEmailAnnounce from '$lib/components/VerifyEmailAnnounce.svelte';
+	import AnnounceBanner from '$lib/components/AnnounceBanner.svelte';
 	import { serverClock } from '$lib/serverclock.svelte';
+	import '$lib/keyboard'; // tracks the on-screen keyboard → `kb-open` class + `--kb` var
 	import { CircleHelp } from '@lucide/svelte';
 
 	let { children } = $props();
@@ -29,10 +33,15 @@
 	//   /confirm-password-reset/<t>  email reset target (must work even for
 	//                                a still-signed-in user whose token was
 	//                                requested by someone with their email)
+	//   /confirm-verification/<t>    email verification target (same reasoning)
+	//   /confirm-email-change/<t>    email-change target (lands on the NEW
+	//                                address, possibly on a signed-out device)
 	//   /welcome                     chrome-less landing/help page (any auth state)
 	let isPublic = $derived(
 		path.startsWith('/join') ||
 			path.startsWith('/confirm-password-reset/') ||
+			path.startsWith('/confirm-verification/') ||
+			path.startsWith('/confirm-email-change/') ||
 			path === '/welcome'
 	);
 	// The home route doubles as the public landing page for signed-out
@@ -86,6 +95,9 @@
 <div class="app-shell" class:with-chrome={chrome}>
 	{#if chrome}
 		<PwaInstallBanner />
+		<VerifyEmailAnnounce />
+		<NotifyAnnounce />
+		<AnnounceBanner />
 	{/if}
 	{@render children()}
 </div>

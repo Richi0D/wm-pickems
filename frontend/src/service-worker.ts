@@ -83,3 +83,66 @@ sw.addEventListener('fetch', (e) => {
 		)
 	);
 });
+
+// ---- Web Push ----
+
+// Show a notification when the server pushes one. Payload is the JSON sent by
+// internal/push: { title, body, url, tag }.
+sw.addEventListener('push', (e) => {
+	let data: {
+		title?: string;
+		body?: string;
+		url?: string;
+		tag?: string;
+		icon?: string;
+		requireInteraction?: boolean;
+	} = {};
+	try {
+		data = e.data?.json() ?? {};
+	} catch {
+		data = { body: e.data?.text() };
+	}
+	const title = data.title || 'WM Pickems';
+	// High-priority messages (requireInteraction) stay on screen until acted on
+	// and buzz; `vibrate` isn't in the TS NotificationOptions type yet.
+	const opts: NotificationOptions & { vibrate?: number[] } = {
+		body: data.body ?? '',
+		// Per-event contextual icon (server-provided); monochrome badge for the
+		// status bar.
+		icon: data.icon || '/icons/notif/default.png',
+		badge: '/icons/badge.png',
+		tag: data.tag,
+		data: { url: data.url || '/' },
+		requireInteraction: data.requireInteraction ?? false
+	};
+	if (data.requireInteraction) opts.vibrate = [200, 100, 200];
+	e.waitUntil(sw.registration.showNotification(title, opts));
+});
+
+// Focus an existing tab (or open one) at the notification's URL on click.
+sw.addEventListener('notificationclick', (e) => {
+	e.notification.close();
+	const url = (e.notification.data as { url?: string })?.url || '/';
+	e.waitUntil(
+		(async () => {
+			const all = await sw.clients.matchAll({
+				type: 'window',
+				includeUncontrolled: true
+			});
+			for (const c of all) {
+				if ('focus' in c) {
+					await c.focus();
+					if ('navigate' in c && new URL(c.url).pathname !== url) {
+						try {
+							await (c as WindowClient).navigate(url);
+						} catch {
+							/* cross-origin or not allowed — ignore */
+						}
+					}
+					return;
+				}
+			}
+			await sw.clients.openWindow(url);
+		})()
+	);
+});

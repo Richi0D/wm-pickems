@@ -7,8 +7,13 @@ class Auth {
 		id: string;
 		name: string;
 		email: string;
+		// Email confirmed via the verification link (or Google OAuth, which
+		// verifies automatically). Unverified accounts receive no emails.
+		verified: boolean;
 		avatarUrl: string | null;
-		role: string; // "admin" | "bot"; empty => normal member
+		role: string; // "owner" | "admin" | "bot"; empty => normal member
+		// Per-event email toggles; absent/missing entries default to ON.
+		notifyPrefs: Record<string, { email?: boolean }>;
 	} | null>(null);
 
 	constructor() {
@@ -32,8 +37,11 @@ class Auth {
 			id: r.id,
 			name: (r.name as string) || r.email,
 			email: r.email,
+			verified: !!r.verified,
 			avatarUrl,
-			role: (r.role as string) || 'member'
+			role: (r.role as string) || 'member',
+			notifyPrefs:
+				(r.notifyPrefs as Record<string, { email?: boolean }>) || {}
 		};
 	}
 
@@ -41,11 +49,16 @@ class Auth {
 		return this.user !== null;
 	}
 
-	// App-level admin (role=admin), the trust boundary for future admin-only
-	// UI. Distinct from a PocketBase superuser. The server enforces the marker;
-	// this is only for showing/hiding admin affordances.
+	// App-level admin, the trust boundary for admin-only UI. Distinct from a
+	// PocketBase superuser. The server enforces the marker; this is only for
+	// showing/hiding admin affordances. Owner inherits admin.
 	get isAdmin() {
-		return this.user?.role === 'admin';
+		return this.user?.role === 'admin' || this.user?.role === 'owner';
+	}
+
+	// App owner (role=owner) — unlocks the owner stats page.
+	get isOwner() {
+		return this.user?.role === 'owner';
 	}
 
 	async login(identity: string, password: string) {
@@ -71,6 +84,13 @@ class Auth {
 		await pb.collection('users').authRefresh();
 	}
 
+	// Save the per-event email notification toggles onto the user record.
+	async updateNotifyPrefs(prefs: Record<string, { email?: boolean }>) {
+		if (!this.user) throw new Error('Not signed in.');
+		await pb.collection('users').update(this.user.id, { notifyPrefs: prefs });
+		await pb.collection('users').authRefresh();
+	}
+
 	// Send a password reset email to the given address. PocketBase always
 	// returns true and never reveals whether the address exists, so we treat
 	// every non-thrown response as success.
@@ -91,6 +111,37 @@ class Auth {
 			.confirmPasswordReset(token, password, passwordConfirm);
 	}
 
+	// Send (or re-send) the verification email for the signed-in account. The
+	// link lands on /confirm-verification/<token>.
+	async requestVerification() {
+		if (!this.user) throw new Error('Not signed in.');
+		await pb.collection('users').requestVerification(this.user.email);
+	}
+
+	// Apply a verification token (from the emailed link). Works signed-in or
+	// out; when signed in, re-pull the auth record so `verified` propagates.
+	async confirmVerification(token: string) {
+		await pb.collection('users').confirmVerification(token);
+		if (pb.authStore.isValid) {
+			await pb.collection('users').authRefresh();
+		}
+	}
+
+	// Ask PocketBase to email a confirmation link to the new address. The
+	// change only applies once it's confirmed there (with the account
+	// password), and the new address counts as verified afterwards.
+	async requestEmailChange(newEmail: string) {
+		if (!this.user) throw new Error('Not signed in.');
+		await pb.collection('users').requestEmailChange(newEmail);
+	}
+
+	// Apply an email-change token (from the link emailed to the new address).
+	// PocketBase invalidates every session afterwards (tokenKey refresh), so
+	// callers should route the user to /login.
+	async confirmEmailChange(token: string, password: string) {
+		await pb.collection('users').confirmEmailChange(token, password);
+	}
+
 	async register(name: string, email: string, password: string) {
 		await pb.collection('users').create({
 			name,
@@ -99,6 +150,12 @@ class Auth {
 			passwordConfirm: password
 		});
 		await this.login(email, password);
+		// Kick off email verification right away; fire-and-forget so a mail
+		// hiccup never blocks account creation (the verify prompt and Settings
+		// both offer a resend).
+		pb.collection('users')
+			.requestVerification(email)
+			.catch(() => {});
 	}
 
 	logout() {
